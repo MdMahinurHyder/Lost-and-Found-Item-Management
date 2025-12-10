@@ -1,0 +1,361 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <conio.h>
+
+#define MAX_USERS 100
+#define MAX_ITEMS 100
+
+typedef struct {
+    char username[30];
+    char password[20];
+    int role;
+} User;
+
+typedef struct {
+    int id;
+    char name[50];
+    char category[30];
+    char description[100];
+    char found_by[30];
+    char claimed_by[30];
+    int status;
+} Item;
+
+User users[MAX_USERS];
+Item items[MAX_ITEMS];
+int userCount = 0;
+int itemCount = 0;
+char currentUser[30];
+
+void loadData();
+void saveData();
+void centerText(char *text);
+void welcomeScreen();
+void registerUser();
+int loginUser();
+void userMenu();
+void adminMenu();
+void addItem();
+void viewAvailableItems();
+void viewPendingUser();
+void viewBelongingItems();
+void adminViewRequests();
+void viewInstructions();
+
+int main() {
+    loadData();
+    welcomeScreen();
+
+    int choice;
+    int role = 0;
+
+    while(1) {
+        printf("\n");
+        centerText("1. LOGIN");
+        centerText("2. REGISTER");
+        centerText("3. EXIT");
+        centerText("4. INSTRUCTIONS");
+        printf("\n\t\tEnter Choice: ");
+        scanf("%d", &choice);
+
+        switch(choice) {
+            case 1:
+                role = loginUser();
+                if (role == 1) userMenu();
+                else if (role == 2) adminMenu();
+                break;
+            case 2:
+                registerUser();
+                break;
+            case 3:
+                saveData();
+                printf("\n\t\tExiting... Data Saved.\n");
+                return 0;
+            case 4:
+                viewInstructions();
+                break;
+            default:
+                printf("\t\tInvalid choice!\n");
+        }
+    }
+    return 0;
+}
+
+void centerText(char *text) {
+    int len = strlen(text);
+    int padding = (80 - len) / 2;
+    for(int i = 0; i < padding; i++) printf(" ");
+    printf("%s\n", text);
+}
+
+void welcomeScreen() {
+    system("cls");
+    printf("\n\n\n");
+    printf("\t\t**************************************************\n");
+    printf("\t\t* *\n");
+    centerText("WELCOME TO LOST AND FOUND");
+    printf("\t\t* *\n");
+    printf("\t\t**************************************************\n");
+    printf("\n");
+    centerText("\"If any item is lost, it could be found here.\"");
+    printf("\n\n\n");
+}
+
+void loadData() {
+    FILE *fp = fopen("users.txt", "r");
+    if(fp != NULL) {
+        while(fscanf(fp, "%s %s %d", users[userCount].username, users[userCount].password, &users[userCount].role) != EOF) {
+            userCount++;
+        }
+        fclose(fp);
+    }
+
+    fp = fopen("items.txt", "r");
+    if(fp != NULL) {
+        while(fscanf(fp, "%d %[^\t] %[^\t] %[^\t] %s %s %d",
+            &items[itemCount].id,
+            items[itemCount].name,
+            items[itemCount].category,
+            items[itemCount].description,
+            items[itemCount].found_by,
+            items[itemCount].claimed_by,
+            &items[itemCount].status) != EOF) {
+            itemCount++;
+        }
+        fclose(fp);
+    }
+}
+
+void saveData() {
+    FILE *fp = fopen("users.txt", "w");
+    for(int i = 0; i < userCount; i++) {
+        fprintf(fp, "%s %s %d\n", users[i].username, users[i].password, users[i].role);
+    }
+    fclose(fp);
+
+    fp = fopen("items.txt", "w");
+    for(int i = 0; i < itemCount; i++) {
+        fprintf(fp, "%d\t%s\t%s\t%s\t%s\t%s\t%d\n",
+            items[i].id,
+            items[i].name,
+            items[i].category,
+            items[i].description,
+            items[i].found_by,
+            items[i].claimed_by,
+            items[i].status);
+    }
+    fclose(fp);
+}
+
+void registerUser() {
+    printf("\n\t\t--- REGISTER ---\n");
+    printf("\t\tEnter Username (no spaces): ");
+    scanf("%s", users[userCount].username);
+    printf("\t\tEnter Password: ");
+    scanf("%s", users[userCount].password);
+
+    printf("\t\tRole (1 for User, 2 for Admin): ");
+    scanf("%d", &users[userCount].role);
+
+    userCount++;
+    saveData();
+    printf("\t\tRegistration Successful!\n");
+}
+
+int loginUser() {
+    char uName[30], pass[20];
+    printf("\n\t\t--- LOGIN ---\n");
+    printf("\t\tUsername: ");
+    scanf("%s", uName);
+    printf("\t\tPassword: ");
+    scanf("%s", pass);
+
+    for(int i = 0; i < userCount; i++) {
+        if(strcmp(uName, users[i].username) == 0 && strcmp(pass, users[i].password) == 0) {
+            strcpy(currentUser, uName);
+            printf("\n\t\tLogin Successful! Welcome, %s.\n", uName);
+            return users[i].role;
+        }
+    }
+    printf("\t\tInvalid Credentials.\n");
+    return 0;
+}
+
+void userMenu() {
+    int choice;
+    do {
+        printf("\n\t\t--- USER DASHBOARD ---\n");
+        printf("\t\t1. Throw in lost item (Report Found)\n");
+        printf("\t\t2. Look for item (Claim)\n");
+        printf("\t\t3. Pending requested items\n");
+        printf("\t\t4. Belonging items (Approved)\n");
+        printf("\t\t5. Help / Instructions\n");
+        printf("\t\t6. Logout\n");
+        printf("\t\tEnter choice: ");
+        scanf("%d", &choice);
+
+        switch(choice) {
+            case 1: addItem(); break;
+            case 2: viewAvailableItems(); break;
+            case 3: viewPendingUser(); break;
+            case 4: viewBelongingItems(); break;
+            case 5: viewInstructions(); break;
+            case 6: printf("\t\tLogging out...\n"); break;
+            default: printf("\t\tInvalid choice.\n");
+        }
+    } while (choice != 6);
+}
+
+void addItem() {
+    items[itemCount].id = itemCount + 1;
+    printf("\n\t\t--- REPORT ITEM ---\n");
+
+    printf("\t\tItem Name: ");
+    getchar();
+    scanf("%[^\n]s", items[itemCount].name);
+
+    printf("\t\tCategory: ");
+    getchar();
+    scanf("%[^\n]s", items[itemCount].category);
+
+    printf("\t\tDescription: ");
+    getchar();
+    scanf("%[^\n]s", items[itemCount].description);
+
+    strcpy(items[itemCount].found_by, currentUser);
+    strcpy(items[itemCount].claimed_by, "None");
+    items[itemCount].status = 0;
+
+    itemCount++;
+    saveData();
+    printf("\t\tItem added successfully!\n");
+}
+
+void viewAvailableItems() {
+    printf("\n\t\t--- AVAILABLE ITEMS ---\n");
+    printf("\t\t%-5s %-20s %-20s\n", "ID", "Name", "Category");
+    printf("\t\t--------------------------------------------\n");
+
+    int found = 0;
+    for(int i = 0; i < itemCount; i++) {
+        if(items[i].status == 0) {
+            printf("\t\t%-5d %-20s %-20s\n", items[i].id, items[i].name, items[i].category);
+            found = 1;
+        }
+    }
+
+    if(!found) {
+        printf("\t\tNo items currently reported as lost.\n");
+        return;
+    }
+
+    int id;
+    printf("\n\t\tEnter ID of item to claim (or 0 to cancel): ");
+    scanf("%d", &id);
+
+    if(id != 0) {
+        for(int i = 0; i < itemCount; i++) {
+            if(items[i].id == id && items[i].status == 0) {
+                items[i].status = 1;
+                strcpy(items[i].claimed_by, currentUser);
+                saveData();
+                printf("\t\tRequest sent to Administrator for approval.\n");
+                return;
+            }
+        }
+        printf("\t\tInvalid ID.\n");
+    }
+}
+
+void viewPendingUser() {
+    printf("\n\t\t--- YOUR PENDING REQUESTS ---\n");
+    for(int i = 0; i < itemCount; i++) {
+        if(items[i].status == 1 && strcmp(items[i].claimed_by, currentUser) == 0) {
+            printf("\t\tID: %d | Name: %s | Status: Awaiting Admin Approval\n", items[i].id, items[i].name);
+        }
+    }
+}
+
+void viewBelongingItems() {
+    printf("\n\t\t--- YOUR BELONGINGS (Recovered) ---\n");
+    for(int i = 0; i < itemCount; i++) {
+        if(items[i].status == 2 && strcmp(items[i].claimed_by, currentUser) == 0) {
+            printf("\t\tID: %d | Name: %s | Status: RETURNED TO YOU\n", items[i].id, items[i].name);
+        }
+    }
+}
+
+void adminMenu() {
+    int choice;
+    do {
+        printf("\n\t\t--- ADMIN DASHBOARD ---\n");
+        printf("\t\t1. View/Approve Pending Requests\n");
+        printf("\t\t2. Help / Instructions\n");
+        printf("\t\t3. Logout\n");
+        printf("\t\tEnter choice: ");
+        scanf("%d", &choice);
+
+        switch(choice) {
+            case 1: adminViewRequests(); break;
+            case 2: viewInstructions(); break;
+            case 3: printf("\t\tLogging out...\n"); break;
+            default: printf("\t\tInvalid choice.\n");
+        }
+    } while (choice != 3);
+}
+
+void adminViewRequests() {
+    printf("\n\t\t--- PENDING REQUESTS ---\n");
+    int found = 0;
+    for(int i = 0; i < itemCount; i++) {
+        if(items[i].status == 1) {
+            printf("\t\tID: %d | Item: %s | Claimed By: %s\n", items[i].id, items[i].name, items[i].claimed_by);
+            found = 1;
+        }
+    }
+
+    if(!found) {
+        printf("\t\tNo pending requests.\n");
+        return;
+    }
+
+    int id;
+    printf("\n\t\tEnter Item ID to Approve (0 to cancel): ");
+    scanf("%d", &id);
+
+    if(id != 0) {
+        for(int i = 0; i < itemCount; i++) {
+            if(items[i].id == id && items[i].status == 1) {
+                items[i].status = 2;
+                saveData();
+                printf("\t\tRequest Approved! Item marked as returned to %s.\n", items[i].claimed_by);
+                return;
+            }
+        }
+        printf("\t\tItem not found or not pending.\n");
+    }
+}
+
+void viewInstructions() {
+    system("cls");
+    printf("\n");
+    centerText("--- USER GUIDE & INSTRUCTIONS ---");
+    printf("\n");
+
+    printf("\t\t[1] USER FEATURES:\n");
+    printf("\t\t  - 'Throw in lost item': Choose this if you FOUND something.\n");
+    printf("\t\t  - 'Look for item': Choose this if you LOST something.\n");
+    printf("\t\t  - 'Pending': See items you claimed but Admin hasn't approved yet.\n");
+    printf("\t\t  - 'Belonging': See items the Admin has successfully returned to you.\n\n");
+
+    printf("\t\t[2] ADMINISTRATOR FEATURES:\n");
+    printf("\t\t  - 'View/Approve': See who claimed what item. Enter ID to approve.\n\n");
+
+    printf("\t\t[3] GENERAL INFO:\n");
+    printf("\t\t  - When registering: Role 1 = Normal User, Role 2 = Administrator.\n");
+    printf("\t\t  - Data is saved automatically when you Exit or Update items.\n");
+
+    printf("\n\t\tPress any key to go back...");
+    getch();
+}
