@@ -32,6 +32,7 @@ void loadData();
 void saveData();
 void centerText(char *text);
 void welcomeScreen();
+void inputPassword(char *pass);
 void registerUser();
 int loginUser();
 void userMenu();
@@ -102,6 +103,32 @@ void welcomeScreen() {
     printf("\n\n\n");
 }
 
+void inputPassword(char *pass) {
+    int i = 0;
+    char ch;
+    while(1) {
+        ch = getch();
+
+        if(ch == 13) {
+            pass[i] = '\0';
+            break;
+        }
+        else if(ch == 8) {
+            if(i > 0) {
+                i--;
+                printf("\b \b");
+            }
+        }
+        else {
+            if(i < 19) {
+                pass[i] = ch;
+                i++;
+                printf("*");
+            }
+        }
+    }
+}
+
 void loadData() {
     FILE *fp = fopen("users.txt", "r");
     if(fp != NULL) {
@@ -153,7 +180,7 @@ void registerUser() {
     printf("\t\tEnter Username (no spaces): ");
     scanf("%s", users[userCount].username);
     printf("\t\tEnter Password: ");
-    scanf("%s", users[userCount].password);
+    inputPassword(users[userCount].password);
 
     printf("\t\tRole (1 for User, 2 for Admin): ");
     scanf("%d", &users[userCount].role);
@@ -169,7 +196,7 @@ int loginUser() {
     printf("\t\tUsername: ");
     scanf("%s", uName);
     printf("\t\tPassword: ");
-    scanf("%s", pass);
+    inputPassword(pass);
 
     for(int i = 0; i < userCount; i++) {
         if(strcmp(uName, users[i].username) == 0 && strcmp(pass, users[i].password) == 0) {
